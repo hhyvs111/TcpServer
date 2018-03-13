@@ -305,7 +305,7 @@
 //	else if (list[0] == "downloadFile")
 //	{
 //		qDebug() << "user " << clientip << " begin to send file to client";
-//		openFile(list[1]);
+//		openF ile(list[1]);
 //		return;  //这里没有加返回，尼玛我是说为什么会收到downloadFile的信息
 //	}
 //	//

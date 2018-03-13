@@ -3,9 +3,16 @@
 MyThread::MyThread(qintptr socketDescriptor,QString mType, QObject *parent) :
 	QThread(parent), socketDescriptor(socketDescriptor)
 {
-	qDebug() << "gou zao Worker Thread : " << QThread::currentThreadId();
+	qDebug() << "gou zao Worker Thread : " << currentThreadId();
 	byteReceived = 0;
 	receiveTime = 0;
+	type = mType;
+}
+MyThread::MyThread(qintptr socketDescriptor, QString mType,QString mFileName, QObject *parent) :
+	QThread(parent), socketDescriptor(socketDescriptor)
+{
+	qDebug() << "gou zao Worker Thread : " << currentThreadId();
+	sendFileName = mFileName;
 	type = mType;
 }
 
@@ -22,7 +29,7 @@ void MyThread::run()
 	//互斥锁
 	while (!isInterruptionRequested())
 	{
-		qDebug() << "sockID:"<<socketDescriptor 
+		qDebug() << "run sockID:"<<socketDescriptor 
 			<< "start new Thread id is" << currentThreadId();
 
 		tcpSocket = new QTcpSocket;
@@ -34,13 +41,40 @@ void MyThread::run()
 		if (type == "upload")
 		{
 			connect(tcpSocket, SIGNAL(readyRead()),
-				this, SLOT(receiveFile()), Qt::BlockingQueuedConnection);
+				this, SLOT(receiveFile()),Qt::DirectConnection);
 		}
 		else if (type == "download")
 		{
+			
+			//不能用这个函数，因为可能socket的线程还是在构造函数里
+			//打开文件后发送
+			if (openFile(sendFileName))
+			{
+				connect(tcpSocket, SIGNAL(bytesWritten(qint64)), this, SLOT(goOnSend(qint64)), Qt::DirectConnection);
+				qDebug() << "send thread now" << currentThreadId();
+				byteToWrite = localFile->size();  //剩余数据的大小  
+				qDebug() << "the file bytetowrite: " << byteToWrite;
+				StotalSize = localFile->size();
 
+				loadSize = 4 * 1024;  //每次发送数据的大小  
+
+				QDataStream out(&outBlock, QIODevice::WriteOnly);
+
+				//获取文件名字
+				currentFileName = sendFileName.right(sendFileName.size() - sendFileName.lastIndexOf('/') - 1);
+
+				//前面两个是文件大小和发送文件头的大小，后面是文件名和用户名
+				out << qint64(0) << qint64(0) << currentFileName;
+
+				StotalSize += outBlock.size();  //总大小为文件大小加上文件名等信息大小  
+				byteToWrite += outBlock.size();
+				qDebug() << "the total bytetowrite: " << byteToWrite;
+				out.device()->seek(0);  //回到字节流起点来写好前面连个qint64，分别为总大小和文件名等信息大小  
+				out << StotalSize << qint64(outBlock.size());
+				//qDebug() << "the file head:" << outBlock;
+				tcpSocket->write(outBlock);  //将读到的文件信息发送到套接字 
+			}
 		}
-		
 		exec();
      	}
 
@@ -60,6 +94,8 @@ void MyThread::receiveFile()
 {
 	if (byteReceived == 0)  //才刚开始接收数据，此数据为文件信息  
 	{
+		qDebug() << "receive sockID:" << socketDescriptor
+			<< "start new Thread id is" << currentThreadId();
 		qDebug() << "receive the file of head";
 		//ui->receivedProgressBar->setValue(0);
 		QDataStream in(tcpSocket);    //从里面读
@@ -100,7 +136,7 @@ void MyThread::receiveFile()
 	else  //正式读取文件内容    
 	{
 		receiveTime++;
-		qDebug() <<"sockId:"<<socketDescriptor<< "ThreadId: "<<currentThreadId() <<" the " << receiveTime << "recv " /*<< "the inBlock size is " << inBlock.size()*/
+		qDebug() <<"sockId:"<<socketDescriptor<< "ThreadId: "<<currentThreadId() << fileName<<" the " << receiveTime << "recv " /*<< "the inBlock size is " << inBlock.size()*/
 			<< "current receive the byte is :" << byteReceived <<" and the total " << RtotalSize;
 
 		inBlock = tcpSocket->readAll();
@@ -138,24 +174,97 @@ void MyThread::receiveFile()
 
 		if (file.insertFile())
 		{
+			inBlock.clear();
+			byteReceived = 0;
+			RtotalSize = 0;
+			receiveTime = 0;
+			newFile->close();
 			emit receiveDone();
 			qDebug() << file.getFileName() << "insert file success!";
 		}
 		else
 			qDebug() << "insert error!";
-		inBlock.clear();
-		byteReceived = 0;
-		RtotalSize = 0;
-		receiveTime = 0;
-		newFile->close();
-		//quit();  //退出该线程
-		//
-		//if (wait())
-		//{
-		//	qDebug() << "the Thread is closed!";
-		//}
+	}
+}
+
+bool MyThread::openFile(QString filename)
+{
+	//qDebug() << globalUserName << " will send a file to server";
+	loadSize = 0;
+	byteToWrite = 0;
+	//RtotalSize = 0;
+	sendTimes = 0;
+	outBlock.clear();
+	//这个不能用
+	sendFileName = filename;
+	localFile = new QFile("files/"+filename);
+	if (localFile->open(QFile::ReadOnly))
+	{
+		qDebug() << "open file:" << filename << " success!";
+		qDebug() << "thread now" << currentThreadId();
+		//sendFile();
+		return true;
+	}
+	else
+	{
+		qDebug() << "open file failed!";
+		return false;
+	}
+
+}
+
+//发送文件头
+void MyThread::sendFile()
+{
+
+	qDebug() << "send thread now" << currentThreadId();
+	byteToWrite = localFile->size();  //剩余数据的大小  
+	qDebug() << "the file bytetowrite: " << byteToWrite;
+	StotalSize = localFile->size();
+
+	loadSize = 4 * 1024;  //每次发送数据的大小  
+
+	QDataStream out(&outBlock, QIODevice::WriteOnly);
+
+	//获取文件名字
+    currentFileName = sendFileName.right(sendFileName.size() - sendFileName.lastIndexOf('/') - 1);
+
+	//前面两个是文件大小和发送文件头的大小，后面是文件名和用户名
+	out << qint64(0) << qint64(0) << currentFileName;
+
+	StotalSize += outBlock.size();  //总大小为文件大小加上文件名等信息大小  
+	byteToWrite += outBlock.size();
+	qDebug() << "the total bytetowrite: " << byteToWrite;
+	out.device()->seek(0);  //回到字节流起点来写好前面连个qint64，分别为总大小和文件名等信息大小  
+	out << StotalSize << qint64(outBlock.size());
+	//qDebug() << "the file head:" << outBlock;
+	tcpSocket->write(outBlock);  //将读到的文件信息发送到套接字 
+}
+
+void MyThread::goOnSend(qint64 numBytes)
+{
+	//QTcpSocket *tcpSocket = static_cast<QTcpSocket*>(this->sender());
+	//QString clientip = tcpSocket->peerAddress().toString();  //得到连接客户端的IP
+
+	sendTimes++;
+	qDebug() << " threadId:" << QThread::currentThreadId() <<"sockID:"<<socketDescriptor
+		<< " "<<currentFileName <<  "the " << sendTimes << "the numBytes: " << numBytes << "the loadSize:" << loadSize
+		<< "  left byteTowrite: " << byteToWrite;
+
+	byteToWrite -= numBytes;  //剩余数据大小  
+	outBlock = localFile->read(qMin(byteToWrite, loadSize));   //如果剩余数据比每次发送的小则发送剩余的
+
+	tcpSocket->write(outBlock);    //将这个信息写入socket
+
+	if (byteToWrite == 0)  //发送完毕  
+	{
+		//qDebug()<<QString::fromLocal8Bit("文件发送完毕!");
+		disconnect(tcpSocket, SIGNAL(bytesWritten(qint64)), this, SLOT(goOnSend(qint64)));
+		sendTimes = 0;
+		qDebug() << " threadId:" << currentThreadId() 
+			<< "sockID:" << socketDescriptor << currentFileName<< "the file has sended";
 		
-		/*disconnect(newtcpsocket, SIGNAL(readyRead()), this, SLOT(receiveFile()));
-		connect(newtcpsocket, SIGNAL(readyRead()), this, SLOT(receiveData()));*/
+		localFile->close();  //发送完文件要关闭，不然不能对其进行下一步操作
+		emit receiveDone();
 	}
 }

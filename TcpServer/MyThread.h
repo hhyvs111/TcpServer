@@ -18,6 +18,7 @@ class MyThread : public QThread
  Q_OBJECT
  public:
 	MyThread(qintptr socketDescriptor,QString, QObject *parent = 0);
+	MyThread(qintptr socketDescriptor, QString, QString, QObject *parent = 0);
 	~MyThread();
  
 	void run();
@@ -30,6 +31,12 @@ signals:
 public slots:
 	void receiveFile();
 	void ThreadExit();
+
+	//send
+	bool openFile(QString);
+	void sendFile();
+	void goOnSend(qint64);
+	//void displayError(QAbstractSocket::SocketError);
  
 private:
 	int socketDescriptor;
@@ -53,6 +60,17 @@ private:
 
 	QString globalUserName;
 	//User *user;   //不能在这里初始化，因为实际上还是在主线程声明的，所以多个线程工作的时候可能会访问冲突！
+
+	//发送文件
+	QFile *localFile;
+	QString sendFileName;  //文件名  
+	QByteArray outBlock;  //分次传  
+	qint64 loadSize;  //每次发送数据的大小  
+	qint64 byteToWrite;  //剩余数据大小  
+	qint64 StotalSize;  //文件总大小 
+	int sendTimes;  //用来标记是否为第一次发送，第一次以后连接信号触发，后面的则手动调用 
+	QString currentFileName;
+
  };
  
-#endif // MYTHREAD_H_
+#endif // MYTHREAD_H_ 
