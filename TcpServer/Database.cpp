@@ -12,7 +12,6 @@ MySql::MySql(QObject *parent)
 	userPwd = "123456";
 	hostName = "127.0.0.1";
 	hostPort = 5432;
-	connDB();
 }
 
 bool MySql::connDB()

@@ -67,10 +67,10 @@ void ThreadHandle::initThreadType(ThreadType type, unsigned int max)
 		{
 			//如果type是线程类型初始化，那么有10个线程
 			if (type == THREADSIZE)
-				this->size = 10;
+				this->size = 5;
 			else
 				//如果type是HandleSize，那么一个线程有1000个连接数
-				this->size = 1000;
+				this->size = 20;
 		}
 
 		//如果是要初始化线程，那么进入initThreadSize函数
@@ -80,9 +80,9 @@ void ThreadHandle::initThreadType(ThreadType type, unsigned int max)
 		else
 		{
 			QThread * tmp = new QThread;
-#ifndef Q_OS_WIN
-			tmp->setEventDispatcher(new EventDispatcherLibEv());
-#endif
+//#ifndef Q_OS_WIN
+//			tmp->setEventDispatcher(new EventDispatcherLibEv());
+//#endif
 			//将这个线程插入到线程池，QHash
 			threadSize.insert(tmp, 0);
 			tmp->start();  // 这里开始运行了
@@ -98,9 +98,9 @@ void ThreadHandle::initThreadSize() //建立好线程并启动，
 	for (unsigned int i = 0; i < size;++i)
 	{
 		tmp = new QThread;
-#ifndef Q_OS_WIN
-		tmp->setEventDispatcher(new EventDispatcherLibEv());
-#endif
+//#ifndef Q_OS_WIN
+//		tmp->setEventDispatcher(new EventDispatcherLibEv());
+//#endif
 		threadSize.insert(tmp, 0);
 		tmp->start();
 	}
@@ -118,9 +118,9 @@ QThread * ThreadHandle::findHandleSize()
 		}
 	}
 	QThread * tmp = new QThread;
-#ifndef Q_OS_WIN
-	tmp->setEventDispatcher(new EventDispatcherLibEv());
-#endif
+//#ifndef Q_OS_WIN
+//	tmp->setEventDispatcher(new EventDispatcherLibEv());
+//#endif
 	threadSize.insert(tmp, 1);
 	tmp->start();
 	return tmp;

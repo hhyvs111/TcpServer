@@ -1,4 +1,5 @@
 #include "User.h"
+#include <QThread>
 //构造函数
 User::User()
 {
@@ -11,16 +12,17 @@ User::~User()
 //根据用户名查询用户
 User& User::queryUserByName( const QString name)
 {
-	qDebug() << name;
+	//qDebug() << name;
 	QString sql = "select * from user where userName = '"
 		+ name + "'";
 	QSqlQuery query;
+	query.clear();
 	qDebug() << sql;
 	query.exec(sql);
 	if (query.next())
 	{
 		userId = query.value(0).toInt();
-		//qDebug() << userId;
+		qDebug() << userId;
 		userName = query.value(1).toString();
 		userPassword = query.value(2).toString();
 		studentId = query.value(3).toString();
@@ -33,6 +35,11 @@ User& User::queryUserByName( const QString name)
 		teacher = query.value(10).toString();
 		return *this;
 	}
+	else
+	{
+		qDebug() <<QThread::currentThreadId()<< "there no return";
+	}
+
 	return *this;
 
 	//return *this; 这里看是不会调用复制构造函数的，但要看你的函数是怎么定义的

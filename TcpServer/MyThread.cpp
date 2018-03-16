@@ -3,7 +3,7 @@
 MyThread::MyThread(qintptr socketDescriptor,QString mType, QObject *parent) :
 	QThread(parent), socketDescriptor(socketDescriptor)
 {
-	qDebug() << "gou zao Worker Thread : " << currentThreadId();
+	//qDebug() << "gou zao Worker Thread : " << currentThreadId();
 	byteReceived = 0;
 	receiveTime = 0;
 	type = mType;
@@ -11,28 +11,28 @@ MyThread::MyThread(qintptr socketDescriptor,QString mType, QObject *parent) :
 MyThread::MyThread(qintptr socketDescriptor, QString mType,QString mFileName, QObject *parent) :
 	QThread(parent), socketDescriptor(socketDescriptor)
 {
-	qDebug() << "gou zao Worker Thread : " << currentThreadId();
+	//qDebug() << "gou zao Worker Thread : " << currentThreadId();
 	sendFileName = mFileName;
 	type = mType;
 }
 
 MyThread::~MyThread()
 {
-	requestInterruption();
+	//requestInterruption();
 	quit();
 	wait();
-	qDebug() <<"the Thread is closed! "<< currentThreadId();
+	qDebug() << "receive sockID:" << socketDescriptor <<"the Thread is closed! "<< currentThreadId();
 }
 //RUN完后线程自动关闭？
 void MyThread::run()
 {
 	//互斥锁
-	while (!isInterruptionRequested())
+	//while (!isInterruptionRequested())
 	{
-		qDebug() << "run sockID:"<<socketDescriptor 
-			<< "start new Thread id is" << currentThreadId();
+		//qDebug() << "run sockID:"<<socketDescriptor 
+		//	<< "start new Thread id is" << currentThreadId();
 
-		tcpSocket = new QTcpSocket;
+		tcpSocket = new QTcpSocket();
 		if (!tcpSocket->setSocketDescriptor(socketDescriptor)) {
 			emit error(tcpSocket->error());
 			return;
@@ -40,6 +40,7 @@ void MyThread::run()
 		//qDebug() << socketDescriptor;
 		if (type == "upload")
 		{
+			qDebug() << "receive sockID:" << socketDescriptor << "connect signal success!";
 			connect(tcpSocket, SIGNAL(readyRead()),
 				this, SLOT(receiveFile()),Qt::DirectConnection);
 		}
@@ -96,22 +97,16 @@ void MyThread::receiveFile()
 	{
 		qDebug() << "receive sockID:" << socketDescriptor
 			<< "start new Thread id is" << currentThreadId();
-		qDebug() << "receive the file of head";
-		//ui->receivedProgressBar->setValue(0);
+
 		QDataStream in(tcpSocket);    //从里面读
-		//QString globalUserName;
+
 		in >> RtotalSize >> byteReceived >> fileName >> globalUserName;   //读的是二进制字节？
 
-		//user = new User();
-		/*user->queryUserByName(globalUserName);
-		qDebug() << "userName is :" << user->getUserName();*/
+		fileName = "files/" + fileName;
 
-		QByteArray change = fileName.toUtf8();
-		fileName = "files/" + QString::fromUtf8(change);
+		qDebug() <<"receive sockID:" << socketDescriptor << "the filename of head: " << fileName
+			<< "totalSize: " << RtotalSize << " first byteReceived: " << byteReceived;
 
-		qDebug() << "the file of head: " << fileName;
-		qDebug() << "totalSize: " << RtotalSize;
-		qDebug() << " first byteReceived: " << byteReceived;
 
 		//设计一个文件读写不重复的功能
 		int i = 0;
@@ -124,7 +119,7 @@ void MyThread::receiveFile()
 			{
 				i++;
 				fileName = fullName + "(" + QString::number(i, 10) + ")." + suffix;
-				qDebug() << "the fileName :" << fileName;
+				qDebug() << "receive sockID:" << socketDescriptor << "the fileName :" << fileName;
 			}
 			else
 				break;
@@ -156,20 +151,19 @@ void MyThread::receiveFile()
 		dt.setDate(date.currentDate());
 		QString currentDate = dt.toString("yyyy-MM-dd hh:mm");
 		File file;
-		User *user = new User();
-		qDebug() << "name: " << globalUserName;
-		user->queryUserByName(globalUserName);
+		User user;
+		qDebug() << "receive sockID:" << socketDescriptor << "globalUserName: " << globalUserName;
+		user.queryUserByName(globalUserName);
 		//qDebug() << user->getUserName();
 		//qDebug() << globalUserName;
 		file.setFileName(fileName.right(fileName.size() - fileName.lastIndexOf('/') - 1));
 		file.setFileSize(QString::number(RtotalSize, 10));
 		file.setFileType(fileName.right(fileName.size() - fileName.lastIndexOf('.') - 1)); //获取文件后缀;
 		file.setFileTime(currentDate);
-		file.setUserId((int)user->getUserId());  //获取由全局名得到的userid
+		file.setUserId((int)user.getUserId());  //获取由全局名得到的userid
 
-		qDebug() << "the file name:" << file.getFileName();
-		qDebug() << "the file time is :" << file.getFileTime();
-		qDebug() << "the userid :" << user->getUserId();
+		qDebug() << "receive sockID:" << socketDescriptor << "the file name:" << file.getFileName() << "the file time is :" << file.getFileTime()
+			<< "the userid :" << user.getUserId();
 		//qDebug() << "the userid from file:" << file.getUserId();
 
 		if (file.insertFile())
@@ -179,11 +173,12 @@ void MyThread::receiveFile()
 			RtotalSize = 0;
 			receiveTime = 0;
 			newFile->close();
-			emit receiveDone();
-			qDebug() << file.getFileName() << "insert file success!";
+			
+			qDebug() << "receive sockID:" << socketDescriptor << file.getFileName() << "insert file success!";
 		}
 		else
-			qDebug() << "insert error!";
+			qDebug() << "receive sockID:" << socketDescriptor << "insert error!";
+		emit receiveDone();
 	}
 }
 

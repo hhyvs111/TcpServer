@@ -8,6 +8,7 @@ MyTcpServer::MyTcpServer(QObject *parent, int numConnections) :
 	//客户端，管理连接，一个客户端一个socket
 	tcpClient = new  QHash<int, MyTcpSocket *>;
 	MySql *mysql = new MySql();  //开启数据库
+	mysql->connDB();
 	//连接的最大数
 	setMaxPendingConnections(numConnections);
 	init();

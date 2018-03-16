@@ -26,7 +26,7 @@ public slots:
 	void sentData(const QByteArray &, const int);//发送信号的槽
 	void disConTcp(int i);
 
-	//void receiveFile();  //接收文件
+	void receiveFile();  //接收文件
 	////void ThreadExit(); 
 
 	////send
@@ -49,16 +49,16 @@ private:
 	User *user;
 
 
-	////接收文件
-	////QTcpSocket *tcpSocket;
-	//QFile *newFile;
-	//QByteArray inBlock;   // QByteArray可以存储raw bytes和传统的8-bits的字符串，都是以'\0'结尾的，使用比char*更方便
-	//QString fileName;
-	//qint64 RtotalSize;  //总共需要发送的文件大小（文件内容&文件名信息）  
-	//qint64 byteReceived;  //已经接收的大小  
-	//int receiveTime;	//接受的次数
+	//接收文件
+	//QTcpSocket *tcpSocket;
+	QFile *newFile;
+	QByteArray inBlock;   // QByteArray可以存储raw bytes和传统的8-bits的字符串，都是以'\0'结尾的，使用比char*更方便
+	QString fileName;
+	qint64 RtotalSize;  //总共需要发送的文件大小（文件内容&文件名信息）  
+	qint64 byteReceived;  //已经接收的大小  
+	int receiveTime;	//接受的次数
 
-	//QString globalUserName;
+	QString globalUserName;
 	////User *user;   //不能在这里初始化，因为实际上还是在主线程声明的，所以多个线程工作的时候可能会访问冲突！
 
 	////发送文件
