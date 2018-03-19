@@ -4,6 +4,9 @@
 #include <QObject>
 #include "Database.h"
 
+
+//¸ãÒ»¸ö»¥³â
+
 class User /*: public MySql*/
 {
 public:

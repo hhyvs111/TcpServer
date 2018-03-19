@@ -18,7 +18,8 @@ class MyThread : public QThread
  Q_OBJECT
  public:
 	MyThread(qintptr socketDescriptor,QString, QObject *parent = 0);
-	MyThread(qintptr socketDescriptor, QString, QString, QObject *parent = 0);
+	MyThread(qintptr socketDescriptor, QString, QString,QString, QObject *parent = 0);
+	MyThread(qintptr socketDescriptor, QString, QString,QString, QString, QObject *parent = 0);
 	~MyThread();
  
 	void run();
@@ -35,7 +36,8 @@ public slots:
 	//send
 	bool openFile(QString);
 	void sendFile();
-	void goOnSend(qint64);
+	void goOnSend();
+	void insertRecord(qint64, qint64);
 	//void displayError(QAbstractSocket::SocketError);
  
 private:
@@ -70,6 +72,12 @@ private:
 	qint64 StotalSize;  //文件总大小 
 	int sendTimes;  //用来标记是否为第一次发送，第一次以后连接信号触发，后面的则手动调用 
 	QString currentFileName;
+
+	qint64 receiveStatus ;
+	qint64 sumBlock;
+	qint64 breakPoint;
+
+	qint64 fileId;
 
  };
  

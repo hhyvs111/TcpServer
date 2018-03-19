@@ -10,7 +10,7 @@
 #include "User.h"
 #include "File.h"
 
-
+extern bool inUse; 
 class MyTcpSocket : public QTcpSocket
 {
 	Q_OBJECT

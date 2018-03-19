@@ -51,7 +51,8 @@ public:
 	//QList<File> queryFilebyUser(QString name);  //返回一个Qlist
 	QList<FileInfo> queryFilebyUser(QString name);  //返回fileinfo结构体的list
 	//通过文件Id查询文件
-	File& queryFilebyId(const int fileId);
+	File& queryFileById(const int fileId);
+	File& queryFileByFileName(const QString fileName);
 
 	//查询文件
 	QList<FileInfo> queryFile(QString);

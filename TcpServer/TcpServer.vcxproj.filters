@@ -90,6 +90,9 @@
     <ClCompile Include="User.cpp">
       <Filter>Source Files\base</Filter>
     </ClCompile>
+    <ClCompile Include="DownloadRecord.cpp">
+      <Filter>Source Files\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="TcpServer.h">
@@ -128,6 +131,9 @@
       <Filter>Header Files\Base</Filter>
     </ClInclude>
     <ClInclude Include="User.h">
+      <Filter>Header Files\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="DownloadRecord.h">
       <Filter>Header Files\Base</Filter>
     </ClInclude>
   </ItemGroup>

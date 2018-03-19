@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 {
 	QApplication a(argc, argv);
 	//TcpServer w;
-	MyTcpServer *myTcpServer = new MyTcpServer();
+	MyTcpServer myTcpServer;
 	
 
 	return a.exec();

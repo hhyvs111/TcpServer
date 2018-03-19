@@ -1,5 +1,6 @@
 #include "User.h"
 #include <QThread>
+bool inUse = false;
 //构造函数
 User::User()
 {
@@ -12,6 +13,7 @@ User::~User()
 //根据用户名查询用户
 User& User::queryUserByName( const QString name)
 {
+	inUse = true;
 	//qDebug() << name;
 	QString sql = "select * from user where userName = '"
 		+ name + "'";
@@ -33,6 +35,7 @@ User& User::queryUserByName( const QString name)
 		term = query.value(8).toString();
 		level = query.value(9).toString();
 		teacher = query.value(10).toString();
+		inUse = false; //用完后就释放
 		return *this;
 	}
 	else

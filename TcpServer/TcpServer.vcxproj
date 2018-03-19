@@ -70,6 +70,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Database.cpp" />
+    <ClCompile Include="DownloadRecord.cpp" />
     <ClCompile Include="File.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_MyTcpServer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -129,6 +130,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Database.h" />
+    <ClInclude Include="DownloadRecord.h" />
     <ClInclude Include="File.h" />
     <ClInclude Include="GeneratedFiles\ui_TcpServer.h" />
     <CustomBuild Include="MyTcpServer.h">

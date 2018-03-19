@@ -107,9 +107,9 @@ QList<FileInfo> File::queryFile(QString condition)
 	return list;
 }
 
-File& File::queryFilebyId(const int fileId)
+File& File::queryFileById(const int fileId)
 {
-	QString sql = "select * from file where fileId = " + fileId;
+	QString sql = "select * from file where fileId = " + QString::number(fileId) + ";";
 	QSqlQuery query;
 	query.exec(sql);
 	/*File file;*/
@@ -124,5 +124,23 @@ File& File::queryFilebyId(const int fileId)
 	}
 	return *this;
 
+}
+File& File::queryFileByFileName(const QString mfileName)
+{
+	QString sql = "select * from file where fileName = '" + mfileName + "';";
+	qDebug() << sql;
+	QSqlQuery query;
+	query.exec(sql);
+	if (query.next())
+	{
+		fileId = query.value(0).toInt();
+		fileName = query.value(1).toString();
+		fileSize = query.value(2).toString();
+		fileType = query.value(3).toString();
+		fileTime = query.value(4).toString();
+		userId = query.value(5).toInt();
+		return *this;
+	}
+	return *this;
 }
 

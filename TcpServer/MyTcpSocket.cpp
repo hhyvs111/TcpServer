@@ -119,7 +119,7 @@ QByteArray MyTcpSocket::handleData(QByteArray dataread, const QString &ip, qint1
 		else
 		{
 			qDebug() << "Login failed!";
-			sendData += "false";
+			sendData += "#false";
 		}
 		return sendData.toUtf8();
 	}
@@ -136,7 +136,7 @@ QByteArray MyTcpSocket::handleData(QByteArray dataread, const QString &ip, qint1
 		else
 		{
 			qDebug() << "username exist!";
-			sendData += "false";
+			sendData += "#false";
 		}
 		return sendData.toUtf8();
 	}
@@ -153,7 +153,7 @@ QByteArray MyTcpSocket::handleData(QByteArray dataread, const QString &ip, qint1
 		else
 		{
 			qDebug() << "studentNumber exist!";
-			sendData += "false";
+			sendData += "#false";
 		}
 		return sendData.toUtf8();
 	}
@@ -249,16 +249,19 @@ QByteArray MyTcpSocket::handleData(QByteArray dataread, const QString &ip, qint1
 	else if (list[0] == "downloadFile")
 	{
 		qDebug() << "begin to downloadFile";
-		MyThread *downloadThread = new MyThread(socketDescriptor1,"download",list[1],this);
+		MyThread *downloadThread = new MyThread(socketDescriptor1, "download", list[1], list[2],this);
+		
 		connect(downloadThread, SIGNAL(finished()), downloadThread, SLOT(deleteLater()));
 		connect(downloadThread, SIGNAL(receiveDone()), downloadThread, SLOT(ThreadExit()));
 		downloadThread->start();
-		//if (openFile(list[1]))
-		//{
+	}
+	else if (list[0] == "downloadBreakFile")
+	{
+		MyThread *downloadThread = new MyThread(socketDescriptor1, "downloadBreakFile", list[1], list[2],list[3],this);
 
-		//	sendFile();
-		//}
-		//connect(downloadThread, SIGNAL(receiveDone()), downloadThread, SLOT(ThreadExit()));
+		connect(downloadThread, SIGNAL(finished()), downloadThread, SLOT(deleteLater()));
+		connect(downloadThread, SIGNAL(receiveDone()), downloadThread, SLOT(ThreadExit()));
+		downloadThread->start();
 	}
 	else if (list[0] == "deleteFile")
 	{
@@ -499,11 +502,19 @@ void MyTcpSocket::receiveFile()
 		QDate date;
 		dt.setTime(time.currentTime());
 		dt.setDate(date.currentDate());
-		QString currentDate = dt.toString("yyyy-MM-dd hh:mm");
+		QString currentDate = dt.toString("yyyy-MM-dd hh:mm:ss");
 		File file;
 		//User user;
 		qDebug() << "receive sockID:" << socketDescriptor1 << "globalUserName: " << globalUserName;
-		user->queryUserByName(globalUserName);
+		while (1)
+		{
+			//如果没用
+			if (!inUse)
+			{
+				user->queryUserByName(globalUserName);
+				break;
+			}
+		}
 		//qDebug() << user->getUserName();
 		//qDebug() << globalUserName;
 		file.setFileName(fileName.right(fileName.size() - fileName.lastIndexOf('/') - 1));
