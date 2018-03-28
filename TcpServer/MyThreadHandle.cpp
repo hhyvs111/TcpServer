@@ -30,7 +30,7 @@ QThread *ThreadHandle::getThread()   //获得类中的线程
 	if (!initFirst)
 	{
 		qDebug() << "Thread init";
-		initThreadType(THREADSIZE, 10);
+		initThreadType(THREADSIZE, 20);
 	}
 	if (type == THREADSIZE)
 		return findThreadSize();
@@ -67,10 +67,10 @@ void ThreadHandle::initThreadType(ThreadType type, unsigned int max)
 		{
 			//如果type是线程类型初始化，那么有10个线程
 			if (type == THREADSIZE)
-				this->size = 5;
+				this->size = 20;
 			else
 				//如果type是HandleSize，那么一个线程有1000个连接数
-				this->size = 20;
+				this->size = 100;
 		}
 
 		//如果是要初始化线程，那么进入initThreadSize函数

@@ -41,6 +41,7 @@ public:
 	
 	//查询报告
 	QList<ReportInfo> queryReport(QString);
+	QString queryLastWeek(QString);
 	//QList<ReportInfo> queryReportByTrueName(QString);
 	////根据报告id查询报告
 	//QList<ReportInfo> queryReportbyId(const int ReportId);

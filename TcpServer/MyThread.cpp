@@ -88,6 +88,7 @@ void MyThread::run()
 				//qDebug() << "the file head:" << outBlock;
 				tcpSocket->write(outBlock);  //将读到的文件信息发送到套接字 
 				tcpSocket->waitForBytesWritten();
+
 			}
 		}
 		else if (type == "downloadBreakFile")
@@ -197,7 +198,7 @@ void MyThread::receiveFile()
 		QDate date;
 		dt.setTime(time.currentTime());
 		dt.setDate(date.currentDate());
-		QString currentDate = dt.toString("yyyy-MM-dd hh:mm");
+		QString currentDate = dt.toString("yyyy-MM-dd hh:mm:ss");
 		File file;
 		User user;
 		qDebug() << "receive sockID:" << socketDescriptor << "globalUserName: " << globalUserName;

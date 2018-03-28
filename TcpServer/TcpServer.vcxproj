@@ -69,6 +69,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Account.cpp" />
     <ClCompile Include="Database.cpp" />
     <ClCompile Include="DownloadRecord.cpp" />
     <ClCompile Include="File.cpp" />
@@ -109,6 +110,7 @@
     <ClCompile Include="MyThread.cpp" />
     <ClCompile Include="MyThreadHandle.cpp" />
     <ClCompile Include="Report.cpp" />
+    <ClCompile Include="Sign.cpp" />
     <ClCompile Include="TcpServer.cpp" />
     <ClCompile Include="User.cpp" />
   </ItemGroup>
@@ -129,6 +131,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Account.h" />
     <ClInclude Include="Database.h" />
     <ClInclude Include="DownloadRecord.h" />
     <ClInclude Include="File.h" />
@@ -155,6 +158,7 @@
     </CustomBuild>
     <ClInclude Include="Report.h" />
     <ClInclude Include="MyThreadHandle.h" />
+    <ClInclude Include="Sign.h" />
     <ClInclude Include="User.h" />
   </ItemGroup>
   <ItemGroup>

@@ -165,6 +165,26 @@ QList<ReportInfo> Report::queryReport(QString data)
 	return list;
 }
 
+QString Report::queryLastWeek(QString data)
+{
+	QStringList datalist = data.split("#");  //”√#∑÷∏Ó
+	QList<ReportInfo> list;
+	QSqlQuery query;
+	QString sql1;
+	if (datalist[3] == "1")
+	{
+		return "newTerm";
+	}
+	sql1 = "select reportQuestionForSolve from report t1 left join  user t2 on t1.reportUserId = t2.userId where t2.userName = '" +
+		datalist[1] + "' and t1.reportTerm = '" + datalist[2] + "' and t1.reportWeek = '" + QString::number(datalist[3].toInt() - 1) + "';";
+	query.exec(sql1);
+	qDebug() << sql1;
+	if (query.next())
+	{
+		return query.value(0).toString();
+	}
+	return "null";
+}
 
 
 

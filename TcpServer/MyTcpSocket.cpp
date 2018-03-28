@@ -1,6 +1,8 @@
 #include "MyTcpSocket.h"
 #include "MyThread.h"
 #include "Report.h"
+#include "Account.h"
+#include "Sign.h"
 #include <QtConcurrent/QtConcurrent>
 #include <QHostAddress>
 #include <QDebug>
@@ -102,7 +104,7 @@ QByteArray MyTcpSocket::handleData(QByteArray dataread, const QString &ip, qint1
 		else
 		{
 			qDebug() << "Register failed!";
-			sendData += "false";
+			sendData += "#false";
 		}
 		return sendData.toUtf8();
 	}
@@ -248,20 +250,89 @@ QByteArray MyTcpSocket::handleData(QByteArray dataread, const QString &ip, qint1
 	//下载文件
 	else if (list[0] == "downloadFile")
 	{
-		qDebug() << "begin to downloadFile";
+		/*qDebug() << "begin to downloadFile";
+		disconnect(this, &MyTcpSocket::readyRead, this, &MyTcpSocket::readData);
 		MyThread *downloadThread = new MyThread(socketDescriptor1, "download", list[1], list[2],this);
 		
 		connect(downloadThread, SIGNAL(finished()), downloadThread, SLOT(deleteLater()));
 		connect(downloadThread, SIGNAL(receiveDone()), downloadThread, SLOT(ThreadExit()));
-		downloadThread->start();
+		downloadThread->start();*/
+		sendFileName = list[1];
+		globalUserName = list[2];
+
+		if (openFile(sendFileName))
+		{
+			disconnect(this, &MyTcpSocket::readyRead, this, &MyTcpSocket::readData);
+			connect(this, SIGNAL(readyRead()), this, SLOT(goOnSend()), Qt::DirectConnection);
+			//qDebug() << "send thread now" << currentThreadId();
+			byteToWrite = localFile->size();  //剩余数据的大小  
+			qDebug() << "the file bytetowrite: " << byteToWrite;
+			StotalSize = localFile->size();
+			loadSize = 4 * 1024;  //每次发送数据的大小  
+			QDataStream out(&outBlock, QIODevice::WriteOnly);
+
+			//获取文件名字
+			currentFileName = sendFileName.right(sendFileName.size() - sendFileName.lastIndexOf('/') - 1);
+			File file;
+			file.queryFileByFileName(currentFileName);
+			qint64 fileId = file.getFileId();
+			qDebug() << "the fileId:" << fileId;
+			//前面两个是文件大小和发送文件头的大小，后面是文件名和用户名
+			out << qint64(0) << qint64(0) << currentFileName << fileId;
+
+			StotalSize += outBlock.size();  //总大小为文件大小加上文件名等信息大小  
+			byteToWrite += outBlock.size();
+			sendTimes = 0;
+			qDebug() << "the total bytetowrite: " << byteToWrite;
+			out.device()->seek(0);  //回到字节流起点来写好前面连个qint64，分别为总大小和文件名等信息大小  
+			out << StotalSize << qint64(outBlock.size());
+			//qDebug() << "the file head:" << outBlock;
+			this->write(outBlock);  //将读到的文件信息发送到套接字 
+			this->waitForBytesWritten();
+
+		}
 	}
 	else if (list[0] == "downloadBreakFile")
 	{
-		MyThread *downloadThread = new MyThread(socketDescriptor1, "downloadBreakFile", list[1], list[2],list[3],this);
+		//MyThread *downloadThread = new MyThread(socketDescriptor1, "downloadBreakFile", list[1], list[2],list[3],this);
+		//connect(downloadThread, SIGNAL(finished()), downloadThread, SLOT(deleteLater()));
+		//connect(downloadThread, SIGNAL(receiveDone()), downloadThread, SLOT(ThreadExit()));
+		//downloadThread->start();
+		//获取文件名字
+		fileId = list[1].toInt();
+		breakPoint =list[2].toInt();
+		globalUserName = list[3];
+		File file;
+		file.queryFileById(fileId);
+		QString breakFileName = file.getFileName();
+		if (openFile(breakFileName))
+		{
+			disconnect(this, &MyTcpSocket::readyRead, this, &MyTcpSocket::readData);
+			connect(this, SIGNAL(readyRead()), this, SLOT(goOnSend()), Qt::DirectConnection);
+			qDebug() << "send thread now" << QThread::currentThreadId();
 
-		connect(downloadThread, SIGNAL(finished()), downloadThread, SLOT(deleteLater()));
-		connect(downloadThread, SIGNAL(receiveDone()), downloadThread, SLOT(ThreadExit()));
-		downloadThread->start();
+			QDataStream out(&outBlock, QIODevice::WriteOnly);
+			byteToWrite = localFile->size();  //剩余数据的大小  
+			qDebug() << "the file bytetowrite: " << byteToWrite;
+			StotalSize = localFile->size();
+			loadSize = 4 * 1024;  //每次发送数据的大小  
+								  //前面两个是文件大小和发送文件头的大小，后面是文件名和用户名
+
+			out << qint64(0) << qint64(0) << breakFileName << fileId;
+			StotalSize += outBlock.size();  //总大小为文件大小加上文件名等信息大小  
+			byteToWrite += outBlock.size();
+			qDebug() << "the total bytetowrite: " << byteToWrite;
+			out.device()->seek(0);  //回到字节流起点来写好前面连个qint64，分别为总大小和文件名等信息大小  
+			out << StotalSize << qint64(outBlock.size());
+			//qDebug() << "the file head:" << outBlock;
+			breakPoint--;
+			localFile->seek(breakPoint * loadSize);	//文件直接seek到断点处
+			byteToWrite -= breakPoint * loadSize;	//
+			sendTimes = breakPoint;
+			this->write(outBlock);  //将读到的文件信息发送到套接字 
+			this->waitForBytesWritten();
+		}
+
 	}
 	else if (list[0] == "deleteFile")
 	{
@@ -296,12 +367,18 @@ QByteArray MyTcpSocket::handleData(QByteArray dataread, const QString &ip, qint1
 	}
 	else if (list[0] == "QueryReporter")
 	{
+		//查询该人和上一周所题的问题。
 		user->queryUserByName(list[1]);
 		QString data = user->getTrueName() + "#" + user->getStudentId() + "#" + user->getLevel()
 			+ "#" + user->getTeacher() + "#" + QString::number(user->getUserId(), 10);
 		return data.toUtf8();
 	}
-
+	else if (list[0] == "QueryLastWeek")
+	{
+		Report report;
+		QString lastWeek = report.queryLastWeek(data);
+		return lastWeek.toUtf8();
+	}
 	else if (list[0] == "sendReport")
 	{
 		//QByteArray dataread = list[1].toUtf8();  //先转换为字节流
@@ -392,9 +469,7 @@ QByteArray MyTcpSocket::handleData(QByteArray dataread, const QString &ip, qint1
 			qDebug() << data;
 			dataReport += data;
 		}
-		
 		return dataReport.toUtf8();   //转成uft8发送到客户端
-
 	}
 	else if (list[0] == "deleteReport")
 	{
@@ -423,7 +498,173 @@ QByteArray MyTcpSocket::handleData(QByteArray dataread, const QString &ip, qint1
 		}
 		return dataToSend.toUtf8();
 	}
-			
+	else if (list[0] == "IncomeAccount")
+	{
+		Account *account = new Account();
+		AccountInfo accountInfo;
+		
+		accountInfo.money = list[1].toInt();
+		accountInfo.type = list[2];
+		accountInfo.time = list[3];
+		accountInfo.remark = list[4];
+		user->queryUserByName(list[5]);
+		accountInfo.userId = user->getUserId();
+		account->setAccountInfo(accountInfo);
+		if (account->insertAccount())
+		{
+			qDebug() << "insert Account success!";
+			QString data = "accounting#true";
+			return data.toUtf8();
+		}
+		else
+		{
+			qDebug() << "insert error!";
+			QString data = "accounting#false";
+			return data.toUtf8();
+		}
+	}
+	else if (list[0] == "OutcomeAccount")
+	{
+		Account *account = new Account();
+		AccountInfo accountInfo;
+
+		accountInfo.money =  0 - list[1].toInt();
+		accountInfo.type = list[2];
+		accountInfo.time = list[3];
+		accountInfo.remark = list[4];
+		user->queryUserByName(list[5]);
+		accountInfo.userId = user->getUserId();
+		account->setAccountInfo(accountInfo);
+		if (account->insertAccount())
+		{
+			qDebug() << "insert Account success!";
+			QString data = "accounting#true";
+			return data.toUtf8();
+		}
+		else
+		{
+			qDebug() << "insert error!";
+			QString data = "accounting#false";
+			return data.toUtf8();
+		}
+	}
+	else if (list[0] == "QueryAccount")
+	{
+		Account *account = new Account();
+		QList<AccountInfo> AccountList = account->queryAccount(data);
+		//如果命令是查看所有文件
+		QString dataAccount = "";  //总数据发到系统里
+		QString dataLenth = QString::number(AccountList.size(), 10);
+		dataAccount += dataLenth + "$";		//信息的第一位是文件个数
+											//将该数据循环发送到客户端
+		for (int i = 0; i < AccountList.size(); i++)
+		{
+			QString data1 = QString::number(AccountList.at(i).accountId) + "#"
+				+ QString::number(AccountList.at(i).money) + "#"
+				+ AccountList.at(i).type + "#"
+				+ AccountList.at(i).time + "#"
+				+ AccountList.at(i).remark + "#"
+				+ AccountList.at(i).name;
+			if (AccountList.size() > 1)
+				data1 += "$";
+			qDebug() << data1;
+			dataAccount += data1;
+		}
+		return dataAccount.toUtf8();
+
+	}
+	else if (list[0] == "InsertSign")
+	{
+		//发送的list1是用户名
+		Sign *sign = new Sign();
+		user->queryUserByName(list[1]);
+		QString status = "sign#";
+		//判断这个ip地址
+		qDebug() << this->peerAddress().toString();
+
+		if (this->peerAddress().toString() == "::ffff:218.76.28.112")
+		{
+			SignInfo signInfo;
+			signInfo.userName = list[1];
+			qDebug() <<"userId:" <<user->getUserId();
+			signInfo.userId = user->getUserId();
+			QDateTime dt;
+			QTime time;
+			QDate date;
+			dt.setTime(time.currentTime());
+			dt.setDate(date.currentDate());
+			QString currentDate = dt.toString("yyyy-MM-dd hh:mm:ss");
+			signInfo.SignTime = currentDate;
+
+			//查询是否重复签到
+			QString repeatData = dt.toString("yyyy-MM-dd");
+			QString queryRepeat = "repeat#" + list[1] + "#" + repeatData;
+			QList<SignInfo> SignList = sign->querySign(queryRepeat);
+			//如果查询大于0，说明今天已经签到了，不要重复签到
+			if (SignList.size() > 0)
+			{
+				status += "repeat";
+				return status.toUtf8();
+			}
+			sign->setSignInfo(signInfo);
+			if (sign->insertSign())
+			{
+				status += "true";
+				
+			}
+			else
+			{
+				status += "false";
+			}
+
+		}
+		else
+		{
+			status += "notInLab";
+		}
+		qDebug() << status;
+		return status.toUtf8();
+	}
+	else if (list[0] == "QuerySign")
+	{
+		Sign *sign = new Sign();
+		QList<SignInfo> SignList = sign->querySign(data);
+		//如果命令是查看所有文件
+		QString dataSign = "";  //总数据发到系统里
+		QString dataLenth = QString::number(SignList.size(), 10);
+		dataSign += dataLenth + "$";		//信息的第一位是文件个数
+											//将该数据循环发送到客户端
+		for (int i = 0; i < SignList.size(); i++)
+		{
+			QString data1 = QString::number(SignList.at(i).SignId) + "#"
+				+ SignList.at(i).SignTime + "#"
+				+ SignList.at(i).userId + "#"
+				+ SignList.at(i).userName;
+			if (SignList.size() > 1)
+				data1 += "$";
+			qDebug() << data1;
+			dataSign += data1;
+		}
+		return dataSign.toUtf8();
+	}
+	else if (list[0] == "QueryMySign")
+	{
+		Sign *sign = new Sign();
+		QString dataSign;
+		QList<SignInfo> SignList = sign->querySign(data);
+		for (int i = 0; i < SignList.size(); i++)
+		{
+			//QString strBuffer;
+			//QDateTime time;
+			//strBuffer = SignList.at(i).SignTime;
+			//time = QDateTime::fromString(strBuffer, "yyyy-MM-dd");
+
+			QString data1 = SignList.at(i).SignTime + "#";
+			dataSign += data1;
+		}
+		qDebug() << dataSign;
+		return dataSign.toUtf8();
+	}
 	
 
 	//else
@@ -540,5 +781,109 @@ void MyTcpSocket::receiveFile()
 		else
 			qDebug() << "receive sockID:" << socketDescriptor1 << "insert error!";
 		//emit receiveDone();
+	}
+}
+
+bool MyTcpSocket::openFile(QString filename)
+{
+	//qDebug() << globalUserName << " will send a file to server";
+	//byteToWrite = 0;
+	////RtotalSize = 0;
+	//sendTimes = 0;
+	outBlock.clear();
+	//这个不能用
+	sendFileName = filename;
+	localFile = new QFile("files/" + filename);
+	if (localFile->open(QFile::ReadOnly))
+	{
+		qDebug() << "open file:" << filename << " success!";
+		//qDebug() << "thread now" << currentThreadId();
+		//sendFile();
+		return true;
+	}
+	else
+	{
+		qDebug() << "open file failed!";
+		return false;
+	}
+
+}
+
+void MyTcpSocket::goOnSend()
+{
+	//qDebug() << "goOnSend";
+	QDataStream in(this);
+	in >> receiveStatus >> sumBlock >> breakPoint;
+	qDebug() << "the status:" << receiveStatus << "the sumBlock:" << sumBlock << "the breakPoint:" << breakPoint;
+	//读入接收成功标志(-1为继续发送，-2为暂停，大于等于0的为断点处
+	if (receiveStatus == -1)
+	{
+		//判断一下，大于才减少
+		if (byteToWrite >= loadSize)
+		{
+
+			outBlock = localFile->read(loadSize);
+			byteToWrite -= loadSize;  //剩余数据大小  
+		}
+		else
+		{
+			outBlock = localFile->read(byteToWrite);
+			byteToWrite = 0;
+		}
+		this->write(outBlock);    //将这个信息写入socket
+		this->waitForBytesWritten();
+		sendTimes++;
+		qDebug() << " threadId:" << QThread::currentThreadId() << "sockID:" << socketDescriptor1
+			<< " " << currentFileName << "the " << sendTimes << "the loadSize:" << loadSize
+			<< "  left byteTowrite: " << byteToWrite;
+	}
+	//暂停发送？
+	else if (receiveStatus == -2)
+	{
+
+	}
+	//向数据库插入断点，其实这个文件发送次数就是断点处
+	else if (receiveStatus > 0)
+	{
+		//插入记录
+		insertRecord(sumBlock, breakPoint);
+	}
+
+	if (byteToWrite == 0)  //发送完毕  
+	{
+		//qDebug()<<QString::fromLocal8Bit("文件发送完毕!");
+		//disconnect(tcpSocket, SIGNAL(bytesWritten(qint64)), this, SLOT(goOnSend(qint64)));
+		sendTimes = 0;
+		//插入记录
+		insertRecord(sumBlock, breakPoint);
+		qDebug() << " threadId:" << QThread::currentThreadId()
+			<< "sockID:" << socketDescriptor1 << currentFileName << "the file has sended";
+		localFile->close();  //发送完文件要关闭，不然不能对其进行下一步操作
+		//emit receiveDone();
+	}
+
+}
+
+void MyTcpSocket::insertRecord(qint64 sumBlock, qint64 breakPoint)
+{
+	User user;
+	user.queryUserByName(globalUserName);
+	File file;
+	file.queryFileByFileName(sendFileName);
+	qDebug() << globalUserName;
+	Record record;
+	record.userId = user.getUserId();
+	record.rSumBlock = sumBlock;
+	record.rBreakPoint = breakPoint;           //这个就是断点
+	record.fileId = file.getFileId();
+	DownloadRecord downloadRecord;
+	downloadRecord.setRecord(record);
+	if (downloadRecord.insertRecord())
+	{
+		qDebug() << "insert downloadRecord success!";
+	}
+	else
+	{
+		qDebug() << "insert failed!";
 	}
 }
