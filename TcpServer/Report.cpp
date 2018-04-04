@@ -89,18 +89,18 @@ QList<ReportInfo> Report::queryReport(QString data)
 	//左连接 只查表相关的数据
 	if (datalist[1] == "all")
 	{
-		sql1 = " select * from report t1 left join  user t2 on t1.reportUserId = t2.userId; ";
+		sql1 = " select * from report t1 left join  user t2 on t1.reportUserId = t2.userId order by reportTime desc ; ";
 	}
 	//根据真名其报告
 	else if (datalist[1] == "TrueName")
 	{
 	 sql1 = " select * from report t1 left join  user t2 on t1.reportUserId = t2.userId where t2.trueName = '"
-			+ datalist[2] + "';";
+			+ datalist[2] + "'order by reportTime desc ;";
 	}
 	else if (datalist[1] == "UserName")
 	{
 		sql1 = " select * from report t1 left join  user t2 on t1.reportUserId = t2.userId where t2.userName = '"
-			+ datalist[2] + "';";
+			+ datalist[2] + "'order by reportTime desc;";
 	}
 	else if (datalist[1] == "reportId")
 	{
@@ -120,25 +120,25 @@ QList<ReportInfo> Report::queryReport(QString data)
 	{
 		sql1 = "select * from report t1 left join  user t2 on t1.reportUserId = t2.userId where t1.reportTerm = '"
 			+ datalist[2] + "' and t1.reportWeek = '"
-			+ datalist[3] + "';";
+			+ datalist[3] + "'order by reportTime desc;";
 	}
 	else if (datalist[1] == "TWC")
 	{
 		sql1 = "select * from report t1 left join  user t2 on t1.reportUserId = t2.userId where t1.reportTerm = '"
 			+ datalist[2] + "' and t1.reportWeek = '"
 			+ datalist[3] + "' and t1.reportMain like '%"
-			+ datalist[4] + "%';";
+			+ datalist[4] + "%'order by reportTime desc;";
 	}
 	else if (datalist[1] == "TAW")
 	{
 		sql1 = "select * from report t1 left join  user t2 on t1.reportUserId = t2.userId where t1.reportTerm = '"
-			+ datalist[2] + "';";
+			+ datalist[2] + "'order by reportTime desc;";
 	}
 	else if (datalist[1] == "TAWC")
 	{
 		sql1 = "select * from report t1 left join  user t2 on t1.reportUserId = t2.userId where t1.reportTerm = '"
 			+ datalist[2] + "' and t1.reportMain like '%"
-			+ datalist[3] + "';";
+			+ datalist[3] + "'order by reportTime desc;";
 	}
 
 	query.exec(sql1);

@@ -34,7 +34,7 @@ QList<SignInfo> Sign::querySign(QString data)
 	QString sql1;
 	if (datalist[1] == "all")
 	{
-		sql1 = "select * from sign t1 left join user t2 on t1.userId = t2.userId;";
+		sql1 = "select * from sign t1 left join user t2 on t1.userId = t2.userId order by t1.SignTime desc;";
 	}
 	else if (datalist[1] == "user")
 	{

@@ -82,11 +82,11 @@ QList<FileInfo> File::queryFile(QString condition)
 	QString sql1;
 	if (condition == "all")
 	{			
-		sql1 = " select fileId,fileName,fileSize,fileType,fileTime,t1.userId,trueName from file t1 left join user t2 on t1.userId = t2.userId;";
+		sql1 = " select fileId,fileName,fileSize,fileType,fileTime,t1.userId,trueName from file t1 left join user t2 on t1.userId = t2.userId order by fileTime desc;";
 	}
 	else
 	{
-		sql1 = "select fileId,fileName,fileSize,fileType,fileTime,t1.userId,trueName from file t1 left join user t2 on t1.userId = t2.userId  where t1.fileName like '%" + condition + "%';";
+		sql1 = "select fileId,fileName,fileSize,fileType,fileTime,t1.userId,trueName from file t1 left join user t2 on t1.userId = t2.userId  where t1.fileName like '%" + condition + "%' order by fileTime desc;";
 	}
 
 	query.exec(sql1);
